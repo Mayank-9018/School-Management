@@ -20,7 +20,7 @@ def get_cred():
     user_ent = ttk.Entry(cred_win,textvariable=username)
     pass_lbl = ttk.Label(cred_win,text='Password:')
     pass_ent = ttk.Entry(cred_win,show='•',textvariable=password)
-    login_btn = ttk.Button(cred_win,text='Login',style='AccentButton')
+    login_btn = ttk.Button(cred_win,text='Login')
     login_btn.bind("<Button-1>",validate_cred)
     global error_lbl
     error_lbl = ttk.Label(cred_win,textvariable=error,foreground='red')
@@ -87,23 +87,6 @@ def insert_scrollbar(tab):
     canvas.create_window((4,4), window=frame, anchor="nw")
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
-def switch_theme():
-    if light_style.theme_use()=='azure':
-            dark_style.theme_use('azure-dark')
-            root.configure(background='#333333')
-            try:
-                cred_win.configure(background='#333333')
-            except:
-                pass
-    else:
-            dark_style.theme_use('azure')
-            root.configure(background='white')
-            try:
-                cred_win.configure(background='white')
-            except:
-                pass
-
-
 root = tk.Tk()
 username = tk.StringVar()
 password = tk.StringVar()
@@ -116,12 +99,6 @@ screenHeight = root.winfo_screenheight()
 xCordinate = int((screenWidth/2) - (windowWidth/2))
 yCordinate = int((screenHeight/2) - (windowHeight/2))
 root.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
-light_style = ttk.Style(root)
-dark_style = ttk.Style(root)
-root.tk.call('source', r'theme\Azure-ttk-theme\azure-dark.tcl')
-root.tk.call('source', r'theme\Azure-ttk-theme\azure.tcl')
-light_style.theme_use('azure')
 login_btn = ttk.Button(root,text="Login",command=get_cred)
 login_btn.pack(expand=1)
-fking_btn = ttk.Button(root,text="switch",command=switch_theme)
 root.mainloop()
