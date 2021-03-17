@@ -43,6 +43,7 @@ def validate_cred(event):
         if user==username.get().strip() and passw==password.get().strip():
             error_lbl['foreground'] = 'green'   # Showing Success Message
             error.set('\u2713 Login Successful')
+            cred_win.update()
             create_window() #Creating the windows with other functionalities
             cred_win.destroy()  # Destroying the Toplevel created to get credentials
         else:
