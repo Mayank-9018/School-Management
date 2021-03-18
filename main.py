@@ -1,6 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 import base64
+from validate import validate
+
+def calc_location(windowWidth,windowHeight):
+    screenWidth = root.winfo_screenwidth()
+    screenHeight = root.winfo_screenheight()
+    xCordinate = int((screenWidth/2) - (windowWidth/2))
+    yCordinate = int((screenHeight/2) - (windowHeight/2))
+    return xCordinate,yCordinate
 
 def get_cred():
     ''' To create a Toplevel window to get Credentials from the user '''
@@ -10,12 +18,9 @@ def get_cred():
     cred_win.resizable(0,0)
     cred_win.bind("<Return>",validate_cred)
     cred_win.configure(bg='white')
-    windowWidth = 280
-    windowHeight = 170
-    screenWidth = root.winfo_screenwidth()
-    screenHeight = root.winfo_screenheight()
-    xCordinate = int((screenWidth/2) - (windowWidth/2))
-    yCordinate = int((screenHeight/2) - (windowHeight/2))
+    windowWidth=280
+    windowHeight=170
+    xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
     cred_win.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
     user_lbl = ttk.Label(cred_win,text='Username:')
     user_ent = ttk.Entry(cred_win,textvariable=username)
@@ -34,22 +39,21 @@ def get_cred():
     cred_win.mainloop()
 
 def validate_cred(event):
-    ''' To Validate Credentials entered by the user.
-    The setting.management file contains the passwords in base64 encoded form.
-    Not to implement security but to fake it '''
-    with open('setting.management','r') as fhand:
-        user = base64.b64decode(bytes(fhand.readline(),'utf-8')).decode()
-        passw = base64.b64decode(bytes(fhand.readline(),'utf-8')).decode()
-        if user==username.get().strip() and passw==password.get().strip():
-            error_lbl['foreground'] = 'green'   # Showing Success Message
-            error.set('\u2713 Login Successful')
-            cred_win.update()
-            create_window() #Creating the windows with other functionalities
-            cred_win.destroy()  # Destroying the Toplevel created to get credentials
-        else:
-            username.set('')
-            password.set('')
-            error.set('\u2757 Wrong Credentials')
+    """To Validate Credentials entered by the User
+
+    Args:
+        event (event): event object
+    """
+    if validate(username.get(),password.get()):
+        error_lbl['foreground'] = 'green'   # Showing Success Message
+        error.set('\u2713 Login Successful')
+        cred_win.update()
+        create_window() #Creating the windows with other functionalities
+        cred_win.destroy()  # Destroying the Toplevel created to get credentials
+    else:
+        username.set('')
+        password.set('')
+        error.set('\u2757 Wrong Credentials')
 
 def onFrameConfigure(canvas):
     '''Reset the scroll region to encompass the inner frame'''
@@ -99,10 +103,7 @@ error = tk.StringVar()
 root.title('School Management')
 windowWidth = 800
 windowHeight = 530
-screenWidth = root.winfo_screenwidth()
-screenHeight = root.winfo_screenheight()
-xCordinate = int((screenWidth/2) - (windowWidth/2))
-yCordinate = int((screenHeight/2) - (windowHeight/2))
+xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
 root.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
 login_btn = ttk.Button(root,text="Login",command=get_cred)
 login_btn.pack(expand=1)
