@@ -5,6 +5,17 @@ con = sqlite3.connect('data.db')
 cur = con.cursor()
 
 def search(table,field,value,tables):
+    """To Search for Data in the Database
+
+    Args:
+        table (String): Name of the table to search from
+        field (String): Name of the field to search from
+        value (String): Value to search for
+        tables (list): List of all the tables in the database
+
+    Returns:
+        Cursor: Cursor of the search results
+    """
     if not value.strip()=='':
         new_val = '%'+value+'%'
     else:
@@ -20,5 +31,3 @@ def search(table,field,value,tables):
     else:
         showerror(title='Field Error',message='Field Cannot be empty.')
         return ()
-
-search('Workers','Salary','',['All','Students','Teachers','Workers'])
