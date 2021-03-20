@@ -8,6 +8,15 @@ from tkinter.messagebox import showerror, showinfo
 import json
 
 def calc_location(windowWidth,windowHeight):
+    """To Calculate location to place the window
+
+    Args:
+        windowWidth (int): Desired Width of the Window
+        windowHeight (int): Desired Height of the Window
+
+    Returns:
+        xCordinate,YCordinate: X and Y Coordinates
+    """
     screenWidth = root.winfo_screenwidth()
     screenHeight = root.winfo_screenheight()
     xCordinate = int((screenWidth/2) - (windowWidth/2))
@@ -84,17 +93,20 @@ def create_window():
 
 
 def create_lookup(master):
+    """To create widgets for the lookup notebook
+
+    Args:
+        master (ttk.Frame): Frame to pack the widgets in
+    """
     master.rowconfigure([0,1,3],weight=1)
     master.rowconfigure([2],weight=6)
     master.columnconfigure([0,1,2,3,4,5,6],weight=1)
     con = sqlite3.connect('data.db')
     cur = con.cursor()
-    # cursor = cur.execute('SELECT * from Students UNION ALL SELECT * from Teachers')
     global fields,tables
     tables = tables_in_sqlite_db(con)
     tables.insert(0,'All')
     fields = []
-    # fields = [i[0] for i in cursor.description]
     table_lbl = ttk.Label(master,text='Table:')
     table_lbl.grid(row=0,column=0,padx=10,pady=10)
     field_lbl = ttk.Label(master,text='Field:')
@@ -121,6 +133,12 @@ def create_lookup(master):
     copy_btn.grid(row=3,column=0,columnspan=7)
 
 def get_fields(cur,combo):
+    """To Get Fields According to the Table
+
+    Args:
+        cur (sqlite.Cursor): Cursor object
+        combo (ttk.Combobox): Combobox object
+    """
     select_sql = tuple(f'Select * from {t}' for t in tables[1:])
     if table_txt.get()=='':
         showerror('Table Error',message='Table Field cannot be empty.')
@@ -135,26 +153,25 @@ def get_fields(cur,combo):
     combo['values'] = fields
 
 def display_lookup():
+    """To Display Treeview of the Data
+    """
     global tree
     tree = ttk.Treeview(notebookTab1, columns=fields, show='headings')
-    # tree.bind('<<TreeviewSelect>>', lambda event: item_selected(tree))
     tree.grid(row=2,column=0,columnspan=7,sticky='nsew')
     for item in fields:
-        tree.heading(item, text=item)
+        tree.heading(item, text=item.capitalize())
     for item in search(table_txt.get(),field_txt.get(),query_txt.get(),tables):
         tree.insert('', tk.END, values=item)
 
-
 def item_selected():
+    """Triggered when the user clicks the Copy Button; Copies the JSON of the selected data to the clipboard
+    """
     dic = {}
     dic_list = []
     for selected_item in tree.selection():
         inner_dic = {}
-        # dictionary
         item = tree.item(selected_item)
-        # list
         record = item['values']
-        #
         for i in range(len(fields)):
             inner_dic[fields[i]] = record[i]
         dic_list.append(inner_dic)
@@ -164,7 +181,6 @@ def item_selected():
     root.clipboard_append(json_out)
     showinfo(title='Information',
             message='JSON Copied to Clipboard!')
-
 
 root = tk.Tk()
 root.configure(background='white')
