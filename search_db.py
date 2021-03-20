@@ -26,6 +26,6 @@ def delete(database,table,namee):
     for item in new_l:
         print(item)
 
-search('data.db','Teachers','Harsh')
+# search('data.db','Teachers','Harsh')
 # add('data.db','Teachers','Harsh',9695445538)
-# delete('data.db','Harsh')
+# delete('data.db','Students','Harsh')
