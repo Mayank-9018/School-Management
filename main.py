@@ -1,7 +1,11 @@
+from tables import tables_in_sqlite_db
 import tkinter as tk
 from tkinter import ttk
-import base64
 from validate import validate
+import sqlite3
+from lookup import search
+from tkinter.messagebox import showerror, showinfo
+import json
 
 def calc_location(windowWidth,windowHeight):
     screenWidth = root.winfo_screenwidth()
@@ -14,6 +18,7 @@ def get_cred():
     ''' To create a Toplevel window to get Credentials from the user '''
     global cred_win
     cred_win = tk.Toplevel()
+    cred_win.focus_set()
     cred_win.title('Login')
     cred_win.resizable(0,0)
     cred_win.bind("<Return>",validate_cred)
@@ -62,36 +67,104 @@ def onFrameConfigure(canvas):
 def on_mousewheel(event,canvas):
     canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
+
 def create_window():
     '''To Construct the Window'''
     login_btn.pack_forget() # Removing the Login Button
     notebook = ttk.Notebook(root)
+    global notebookTab1
     notebookTab1 = ttk.Frame(notebook)
-    insert_scrollbar(notebookTab1)
+    create_lookup(notebookTab1)
     notebook.add(notebookTab1, text='Data Lookup')
     notebookTab2 = ttk.Frame(notebook)
-    insert_scrollbar(notebookTab2)
     notebook.add(notebookTab2, text='Student Details')
     notebookTab3 = ttk.Frame(notebook)
-    insert_scrollbar(notebookTab3)
     notebook.add(notebookTab3, text='Teacher Details')
     notebook.pack(fill='both',expand=1,padx=50,pady=50)
 
-def insert_scrollbar(tab):
-    '''
-    To insert scrollbar to various tabs of the notebook
 
-    Args:
-        tab (frame object): The Frame object in which scrollbar will be added'''
-    canvas = tk.Canvas(tab, borderwidth=0)
-    canvas.bind_all("<MouseWheel>", lambda event: on_mousewheel(event,canvas))
-    frame = tk.Frame(canvas,bd=0)
-    vsb = ttk.Scrollbar(tab, orient="vertical", command=canvas.yview)
-    canvas.configure(yscrollcommand=vsb.set)
-    vsb.pack(side="right", fill="y")
-    canvas.pack(side="left", fill="both", expand=True)
-    canvas.create_window((4,4), window=frame, anchor="nw")
-    frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+def create_lookup(master):
+    master.rowconfigure([0,1,3],weight=1)
+    master.rowconfigure([2],weight=6)
+    master.columnconfigure([0,1,2,3,4,5,6],weight=1)
+    con = sqlite3.connect('data.db')
+    cur = con.cursor()
+    # cursor = cur.execute('SELECT * from Students UNION ALL SELECT * from Teachers')
+    global fields,tables
+    tables = tables_in_sqlite_db(con)
+    tables.insert(0,'All')
+    fields = []
+    # fields = [i[0] for i in cursor.description]
+    table_lbl = ttk.Label(master,text='Table:')
+    table_lbl.grid(row=0,column=0,padx=10,pady=10)
+    field_lbl = ttk.Label(master,text='Field:')
+    field_lbl.grid(row=0,column=2,padx=10,pady=10)
+    global field_txt,table_txt
+    field_txt = tk.StringVar()
+    table_txt = tk.StringVar()
+    table_combo = ttk.Combobox(master,textvariable=table_txt,values=tables,state='readonly')
+    table_combo.grid(row=0,column=1,padx=10,pady=10)
+    field_combo = ttk.Combobox(master,textvariable=field_txt,values=fields,state='readonly',postcommand=lambda :get_fields(cur,field_combo))
+    field_combo.grid(row=0,column=3,padx=10,pady=10)
+    query_lbl = ttk.Label(master,text='Search Query:')
+    query_lbl.grid(row=0,column=4,padx=10,pady=10)
+    global query_txt
+    query_txt = tk.StringVar()
+    query_ent = ttk.Entry(master,textvariable=query_txt)
+    query_ent.bind("<Return>",lambda e: display_lookup())
+    query_ent.grid(row=0,column=5,padx=10,pady=10)
+    go_btn = ttk.Button(master,text='Go',command=display_lookup)
+    go_btn.grid(row=0,column=6,padx=10,pady=10)
+    sep = ttk.Separator(master,orient='horizontal')
+    sep.grid(row=1,column=0,columnspan=7,sticky='nsew')
+    copy_btn = ttk.Button(notebookTab1,text='Copy',command=item_selected)
+    copy_btn.grid(row=3,column=0,columnspan=7)
+
+def get_fields(cur,combo):
+    select_sql = tuple(f'Select * from {t}' for t in tables[1:])
+    if table_txt.get()=='':
+        showerror('Table Error',message='Table Field cannot be empty.')
+        return
+    if table_txt.get()=='All':
+        sql = ' UNION ALL '.join(select_sql)
+    else:
+        sql = f'SELECT * from {table_txt.get()}'
+    cursor = cur.execute(sql)
+    global fields
+    fields = [i[0] for i in cursor.description]
+    combo['values'] = fields
+
+def display_lookup():
+    global tree
+    tree = ttk.Treeview(notebookTab1, columns=fields, show='headings')
+    # tree.bind('<<TreeviewSelect>>', lambda event: item_selected(tree))
+    tree.grid(row=2,column=0,columnspan=7,sticky='nsew')
+    for item in fields:
+        tree.heading(item, text=item)
+    for item in search(table_txt.get(),field_txt.get(),query_txt.get(),tables):
+        tree.insert('', tk.END, values=item)
+
+
+def item_selected():
+    dic = {}
+    dic_list = []
+    for selected_item in tree.selection():
+        inner_dic = {}
+        # dictionary
+        item = tree.item(selected_item)
+        # list
+        record = item['values']
+        #
+        for i in range(len(fields)):
+            inner_dic[fields[i]] = record[i]
+        dic_list.append(inner_dic)
+    dic['student'] = dic_list
+    json_out = json.dumps(dic,indent=4)
+    root.clipboard_clear()
+    root.clipboard_append(json_out)
+    showinfo(title='Information',
+            message='JSON Copied to Clipboard!')
+
 
 root = tk.Tk()
 root.configure(background='white')
