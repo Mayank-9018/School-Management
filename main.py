@@ -76,7 +76,6 @@ def onFrameConfigure(canvas):
 def on_mousewheel(event,canvas):
     canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
-
 def create_window():
     '''To Construct the Window'''
     login_btn.pack_forget() # Removing the Login Button
@@ -90,7 +89,6 @@ def create_window():
     notebookTab3 = ttk.Frame(notebook)
     notebook.add(notebookTab3, text='Teacher Details')
     notebook.pack(fill='both',expand=1,padx=50,pady=50)
-
 
 def create_lookup(master):
     """To create widgets for the lookup notebook
