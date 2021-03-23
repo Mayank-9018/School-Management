@@ -80,12 +80,15 @@ def create_window():
     '''To Construct the Window'''
     login_btn.pack_forget() # Removing the Login Button
     notebook = ttk.Notebook(root)
-    global notebookTab1
+    global notebookTab1,notebookTab2
     notebookTab1 = ttk.Frame(notebook)
+    notebookTab1.identifier = "search"
     create_lookup(notebookTab1)
     notebook.add(notebookTab1, text='Data Lookup')
     notebookTab2 = ttk.Frame(notebook)
-    notebook.add(notebookTab2, text='Student Details')
+    notebookTab2.identifier = "modify"
+    create_lookup(notebookTab2)
+    notebook.add(notebookTab2, text='Modify Data')
     notebookTab3 = ttk.Frame(notebook)
     notebook.add(notebookTab3, text='Teacher Details')
     notebook.pack(fill='both',expand=1,padx=50,pady=50)
@@ -101,7 +104,7 @@ def create_lookup(master):
     master.columnconfigure([0,1,2,3,4,5,6],weight=1)
     con = sqlite3.connect('data.db')
     cur = con.cursor()
-    global fields,tables
+    global fields
     tables = tables_in_sqlite_db(con)
     tables.insert(0,'All')
     fields = []
@@ -109,33 +112,36 @@ def create_lookup(master):
     table_lbl.grid(row=0,column=0,pady=10)
     field_lbl = ttk.Label(master,text='Field:')
     field_lbl.grid(row=0,column=2,pady=10)
-    global field_txt,table_txt
     field_txt = tk.StringVar()
     table_txt = tk.StringVar()
     table_combo = ttk.Combobox(master,textvariable=table_txt,values=tables,state='readonly')
     table_combo.grid(row=0,column=1,pady=10)
-    field_combo = ttk.Combobox(master,textvariable=field_txt,values=fields,state='readonly',postcommand=lambda :get_fields(cur,field_combo))
+    field_combo = ttk.Combobox(master,textvariable=field_txt,values=fields,state='readonly',postcommand=lambda :get_fields(cur,field_combo,tables,table_txt))
     field_combo.grid(row=0,column=3,pady=10)
     query_lbl = ttk.Label(master,text='Search Query:')
     query_lbl.grid(row=0,column=4,pady=10)
-    global query_txt
     query_txt = tk.StringVar()
     query_ent = ttk.Entry(master,textvariable=query_txt)
-    query_ent.bind("<Return>",lambda e: display_lookup())
+    query_ent.bind("<Return>",lambda e: display_lookup(master,tables,field_txt,table_txt,query_txt))
     query_ent.grid(row=0,column=5,pady=10)
-    go_btn = ttk.Button(master,text='Go',command=display_lookup)
+    go_btn = ttk.Button(master,text='Go',command=lambda : display_lookup(master,tables,field_txt,table_txt,query_txt))
     go_btn.grid(row=0,column=6,pady=10)
     sep = ttk.Separator(master,orient='horizontal')
     sep.grid(row=1,column=0,columnspan=7,sticky='nsew')
-    copy_btn = ttk.Button(notebookTab1,text='Copy',command=item_selected)
+    if master.identifier == 'search':
+        copy_btn = ttk.Button(master,text='Copy',command=lambda : item_selected())
+    elif master.identifier == 'modify':
+        copy_btn = ttk.Button(master,text='Modify',command= lambda : modify(fields))
     copy_btn.grid(row=3,column=0,columnspan=7)
 
-def get_fields(cur,combo):
+def get_fields(cur,combo,tables,table_txt):
     """To Get Fields According to the Table
 
     Args:
         cur (sqlite.Cursor): Cursor object
         combo (ttk.Combobox): Combobox object
+        tables (list): List of all queries in the database
+        table_txt (StringVar): String Varible of the Table Name Selected
     """
     select_sql = tuple(f'Select * from {t}' for t in tables[1:])
     if table_txt.get()=='':
@@ -150,11 +156,18 @@ def get_fields(cur,combo):
     fields = [i[0] for i in cursor.description]
     combo['values'] = fields
 
-def display_lookup():
+def display_lookup(master,tables,field_txt,table_txt,query_txt):
     """To Display Treeview of the Data
+
+    Args:
+        master (ttk.Frame): Frame to pack the widget in
+        tables (List): List of all queries in the database
+        field_txt (StringVar): String Variable of the field
+        table_txt (StringVar): String Varibale of the Table
+        query_txt (StringVar): String Variable of the Query
     """
     global tree
-    tree = ttk.Treeview(notebookTab1, columns=fields, show='headings')
+    tree = ttk.Treeview(master, columns=fields, show='headings')
     tree.grid(row=2,column=0,columnspan=7,sticky='nsew')
     for item in fields:
         tree.heading(item, text=item.capitalize())
@@ -179,6 +192,33 @@ def item_selected():
     root.clipboard_append(json_out)
     showinfo(title='Information',
             message='JSON Copied to Clipboard!')
+
+def modify(fields):
+    selected_item = tree.item(tree.selection()[0])['values']
+    modify_top = tk.Toplevel(root)
+    modify_top.focus_set()
+    modify_top.title('Modify Data')
+    modify_top.resizable(0,0)
+    modify_top.bind("<Return>",lambda e : 1+2)
+    modify_top.configure(bg='white')
+    windowWidth=280
+    windowHeight=250
+    xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
+    modify_top.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
+    stringvar_list = [tk.StringVar().set(selected_item[s]) for s in range(len(selected_item))]
+    row = 0
+    col = 0
+    frm = ttk.Frame(modify_top)
+    for i in range(len(fields)):
+        lbl = ttk.Label(frm,text=fields[i])
+        ent = ttk.Entry(frm,textvariable=stringvar_list[i])
+        lbl.grid(row=row,column=col,padx=2,pady=2)
+        ent.grid(row=row,column=col+1,padx=2,pady=2)
+        ent.insert(0,selected_item[i])
+        row+=1
+    frm.grid(sticky='nsew',row=0,column=0,padx=30,pady=20)
+    make_changes_btn = ttk.Button(modify_top,text='Make Changes')
+    make_changes_btn.grid(row=1,column=0)
 
 root = tk.Tk()
 root.configure(background='white')
