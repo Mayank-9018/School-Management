@@ -166,6 +166,13 @@ def item_selected():
     """
     dic = {}
     dic_list = []
+    try:
+        if tree.selection()==():
+            showerror('Error','No Data Selected!')
+            return
+    except NameError:
+        showerror('Error','No Data Selected!')
+        return
     for selected_item in tree.selection():
         inner_dic = {}
         item = tree.item(selected_item)
