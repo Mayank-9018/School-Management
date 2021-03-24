@@ -179,6 +179,13 @@ def item_selected():
     """
     dic = {}
     dic_list = []
+    try:
+        if tree.selection()==():
+            showerror('Error','No Data Selected!')
+            return
+    except NameError:
+        showerror('Error','No Data Selected!')
+        return
     for selected_item in tree.selection():
         inner_dic = {}
         item = tree.item(selected_item)
@@ -194,7 +201,10 @@ def item_selected():
             message='JSON Copied to Clipboard!')
 
 def modify(fields):
-    selected_item = tree.item(tree.selection()[0])['values']
+    # fields = fields[1:]
+    fields = ['Label1','Label2','Label3','Label4','Label5','Label6']
+    # selected_item = tree.item(tree.selection()[0])['values'][1:]
+    selected_item = ['Entry1','Entry2','Entry3','Entry4','Entry5','Label6']
     modify_top = tk.Toplevel(root)
     modify_top.focus_set()
     modify_top.title('Modify Data')
@@ -205,7 +215,9 @@ def modify(fields):
     windowHeight=250
     xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
     modify_top.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
-    stringvar_list = [tk.StringVar().set(selected_item[s]) for s in range(len(selected_item))]
+    stringvar_list = [tk.StringVar(master=root) for s in range(len(selected_item))]
+    for var in range(len(stringvar_list)):
+        stringvar_list[var].set(selected_item[var])
     row = 0
     col = 0
     frm = ttk.Frame(modify_top)
@@ -214,11 +226,13 @@ def modify(fields):
         ent = ttk.Entry(frm,textvariable=stringvar_list[i])
         lbl.grid(row=row,column=col,padx=2,pady=2)
         ent.grid(row=row,column=col+1,padx=2,pady=2)
-        ent.insert(0,selected_item[i])
         row+=1
     frm.grid(sticky='nsew',row=0,column=0,padx=30,pady=20)
-    make_changes_btn = ttk.Button(modify_top,text='Make Changes')
+    make_changes_btn = ttk.Button(modify_top,text='Make Changes',command = lambda : make_changes())
     make_changes_btn.grid(row=1,column=0)
+
+def make_changes():
+    pass
 
 root = tk.Tk()
 root.configure(background='white')
