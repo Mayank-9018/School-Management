@@ -24,3 +24,9 @@ A tkinter based Python application which uses SQLite to store and manipulate dat
 - [x] Data Extraction in JSON format
   ![Popup](https://i.imgur.com/SYqZ1XR.png)
   ![Data](https://i.imgur.com/tx2wrY8.png)
+
+- [x] Implementing Search in Modify Tab
+  ![Search in Modify](https://i.imgur.com/ZoZfhEG.png)
+
+- [x] Modification of Data
+  ![Data Modification](https://i.imgur.com/tS0dDJd.png)
