@@ -82,7 +82,7 @@ def create_window():
     notebook = ttk.Notebook(root)
     global notebookTab1,notebookTab2
     notebookTab1 = ttk.Frame(notebook)
-    notebookTab1.identifier = "search"
+    notebookTab1.identifier = "search" # An Identifier to distinguish later in the program between the parents
     create_lookup(notebookTab1)
     notebook.add(notebookTab1, text='Data Lookup')
     notebookTab2 = ttk.Frame(notebook)
@@ -204,11 +204,19 @@ def item_selected():
             message='JSON Copied to Clipboard!')
 
 def modify(fields,con,cur,table_txt):
+    """To Create TopLevel and Widgets for the modification of values
+
+    Args:
+        fields (list): List of all the columns in the query
+        con (sqlite3.connect): SQLite Connection Object
+        cur (sqlite3.cursor): Cursor Object
+        table_txt (StringVar): String Variable of the Table Selected
+    """
     try:
         selected_item = tree.item(tree.selection()[0])['values']
     except (IndexError,NameError):
         showerror('Error','No Data Selected!')
-    modify_top = tk.Toplevel(root)
+    modify_top = tk.Toplevel(root)  # TopLevel to show Label and Entries to allow changes
     modify_top.focus_set()
     modify_top.title('Modify Data')
     modify_top.resizable(0,0)
@@ -218,9 +226,9 @@ def modify(fields,con,cur,table_txt):
     xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
     modify_top.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
     global stringvar_list
-    stringvar_list = [tk.StringVar() for s in range(len(selected_item))]
+    stringvar_list = [tk.StringVar() for s in range(len(selected_item))]    # List of String Variables to store the text variables of the entries
     for var in range(len(stringvar_list)):
-        stringvar_list[var].set(selected_item[var])
+        stringvar_list[var].set(selected_item[var])     # Setting old values to the String Variables
     row = 0
     col = 0
     frm = ttk.Frame(modify_top)
@@ -236,6 +244,16 @@ def modify(fields,con,cur,table_txt):
     make_changes_btn.grid(row=1,column=0)
 
 def change(modify_top,con,cur,table_txt,fields,stringvar_list):
+    """To Modify the Values
+
+    Args:
+        modify_top (TopLevel): TopLevel which will be destoyed after making changes.
+        con (sqlite3.connect): SQLite Connection Object
+        cur (sqlite3.cursor): SQLite Cursor Object
+        table_txt (StringVar): String Variable of the Table Selected
+        fields (List): List of all the fields in the query
+        stringvar_list (StringVar list[]): List of String Variables containing the changed or unchanged values
+    """
     update_sql = []
     for i in range(len(fields[1:])):
         update_sql.append(f"{fields[1:][i]} = '{stringvar_list[1:][i].get()}'")
@@ -247,8 +265,12 @@ def change(modify_top,con,cur,table_txt,fields,stringvar_list):
     edit(stringvar_list)
     modify_top.destroy()
 
-
 def edit(stringvar_list):
+    """To change old values in the TreeView with the New Values
+
+    Args:
+        stringvar_list (StringVar list[]): List of String Variables containing changed or unchanged values
+    """
     x = tree.get_children()
     string_list = tuple(var.get() for var in stringvar_list)
     for item in x:
