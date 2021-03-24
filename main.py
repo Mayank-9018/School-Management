@@ -106,7 +106,10 @@ def create_lookup(master):
     cur = con.cursor()
     global fields
     tables = tables_in_sqlite_db(con)
-    tables.insert(0,'All')
+    if master.identifier == 'search':
+        tables.insert(0,'All')
+    else:
+        pass
     fields = []
     table_lbl = ttk.Label(master,text='Table:')
     table_lbl.grid(row=0,column=0,pady=10)
@@ -131,7 +134,7 @@ def create_lookup(master):
     if master.identifier == 'search':
         copy_btn = ttk.Button(master,text='Copy',command=lambda : item_selected())
     elif master.identifier == 'modify':
-        copy_btn = ttk.Button(master,text='Modify',command= lambda : modify(fields))
+        copy_btn = ttk.Button(master,text='Modify',command= lambda : modify(fields,con,cur,table_txt))
     copy_btn.grid(row=3,column=0,columnspan=7)
 
 def get_fields(cur,combo,tables,table_txt):
@@ -200,39 +203,58 @@ def item_selected():
     showinfo(title='Information',
             message='JSON Copied to Clipboard!')
 
-def modify(fields):
-    # fields = fields[1:]
-    fields = ['Label1','Label2','Label3','Label4','Label5','Label6']
-    # selected_item = tree.item(tree.selection()[0])['values'][1:]
-    selected_item = ['Entry1','Entry2','Entry3','Entry4','Entry5','Label6']
+def modify(fields,con,cur,table_txt):
+    try:
+        selected_item = tree.item(tree.selection()[0])['values']
+    except (IndexError,NameError):
+        showerror('Error','No Data Selected!')
     modify_top = tk.Toplevel(root)
     modify_top.focus_set()
     modify_top.title('Modify Data')
     modify_top.resizable(0,0)
-    modify_top.bind("<Return>",lambda e : 1+2)
     modify_top.configure(bg='white')
     windowWidth=280
     windowHeight=250
     xCordinate,yCordinate = calc_location(windowWidth,windowHeight)
     modify_top.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, xCordinate, yCordinate))
-    stringvar_list = [tk.StringVar(master=root) for s in range(len(selected_item))]
+    global stringvar_list
+    stringvar_list = [tk.StringVar() for s in range(len(selected_item))]
     for var in range(len(stringvar_list)):
         stringvar_list[var].set(selected_item[var])
     row = 0
     col = 0
     frm = ttk.Frame(modify_top)
-    for i in range(len(fields)):
-        lbl = ttk.Label(frm,text=fields[i])
-        ent = ttk.Entry(frm,textvariable=stringvar_list[i])
+    for i in range(len(fields[1:])):
+        lbl = ttk.Label(frm,text=fields[1:][i])
+        ent = ttk.Entry(frm,textvariable=stringvar_list[1:][i])
         lbl.grid(row=row,column=col,padx=2,pady=2)
         ent.grid(row=row,column=col+1,padx=2,pady=2)
         row+=1
     frm.grid(sticky='nsew',row=0,column=0,padx=30,pady=20)
-    make_changes_btn = ttk.Button(modify_top,text='Make Changes',command = lambda : make_changes())
+    make_changes_btn = ttk.Button(modify_top,text='Make Changes',command = lambda : change(modify_top,con,cur,table_txt,fields,stringvar_list))
+    modify_top.bind("<Return>",lambda e: change(modify_top,con,cur,table_txt,fields,stringvar_list))
     make_changes_btn.grid(row=1,column=0)
 
-def make_changes():
-    pass
+def change(modify_top,con,cur,table_txt,fields,stringvar_list):
+    update_sql = []
+    for i in range(len(fields[1:])):
+        update_sql.append(f"{fields[1:][i]} = '{stringvar_list[1:][i].get()}'")
+    sql = ','.join(update_sql)
+    sql = f"UPDATE {table_txt.get()} SET {sql} WHERE {fields[0]}='{stringvar_list[0].get()}'"
+    cur.execute(sql)
+    con.commit()
+    showinfo('Successful','Data Modification Successful!')
+    edit(stringvar_list)
+    modify_top.destroy()
+
+
+def edit(stringvar_list):
+    x = tree.get_children()
+    string_list = tuple(var.get() for var in stringvar_list)
+    for item in x:
+        if item==tree.selection()[0]:
+            tree.item(item,values=string_list)
+
 
 root = tk.Tk()
 root.configure(background='white')
